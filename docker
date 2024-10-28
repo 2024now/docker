@@ -1,0 +1,100 @@
+#!/bin/bash
+
+# 检查是否以 root 权限运行
+if [ "$EUID" -ne 0 ]; then 
+    echo "请以 root 权限运行此脚本"
+    echo "使用方法: sudo bash $0"
+    exit 1
+fi
+
+# 设置错误处理
+set -e
+
+# 打印步骤信息的函数
+print_step() {
+    echo "================================================"
+    echo ">>> $1"
+    echo "================================================"
+}
+
+# 检查命令是否执行成功的函数
+check_status() {
+    if [ $? -eq 0 ]; then
+        echo "✅ $1 成功"
+    else
+        echo "❌ $1 失败"
+        exit 1
+    fi
+}
+
+# 开始安装
+print_step "开始安装 Docker 和 Docker Compose"
+
+# 1. 更新软件包索引
+print_step "1. 更新软件包索引"
+apt update
+check_status "更新软件包索引"
+
+# 2. 安装依赖包
+print_step "2. 安装依赖包"
+apt install -y apt-transport-https ca-certificates curl software-properties-common
+check_status "安装依赖包"
+
+# 3. 添加 Docker 的官方 GPG 密钥
+print_step "3. 添加 Docker 的官方 GPG 密钥"
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+check_status "添加 GPG 密钥"
+
+# 4. 设置 Docker 稳定版仓库
+print_step "4. 设置 Docker 仓库"
+add-apt-repository -y "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+check_status "设置 Docker 仓库"
+
+# 5. 再次更新软件包索引
+print_step "5. 更新软件包索引"
+apt update
+check_status "更新软件包索引"
+
+# 6. 安装 Docker CE
+print_step "6. 安装 Docker CE"
+apt install -y docker-ce
+check_status "安装 Docker CE"
+
+# 7. 检查 Docker 状态
+print_step "7. 检查 Docker 状态"
+systemctl start docker
+systemctl enable docker
+check_status "Docker 服务启动"
+
+# 8. 安装 Docker Compose
+print_step "8. 安装 Docker Compose"
+curl -L "https://github.com/docker/compose/releases/download/v2.4.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
+check_status "安装 Docker Compose"
+
+# 9. 验证安装
+print_step "安装验证"
+echo "Docker 版本:"
+docker --version
+echo "Docker Compose 版本:"
+docker-compose --version
+
+# 10. 重启 Docker 服务
+print_step "重启 Docker 服务"
+systemctl restart docker
+check_status "重启 Docker 服务"
+
+# 11. 添加当前用户到 docker 用户组
+if [ "$SUDO_USER" ]; then
+    print_step "将用户 $SUDO_USER 添加到 docker 组"
+    usermod -aG docker $SUDO_USER
+    check_status "添加用户到 docker 组"
+fi
+
+echo ""
+echo "🎉 Docker 和 Docker Compose 安装完成！"
+echo "请运行以下命令以应用组更改（如果需要）："
+echo "newgrp docker"
+echo ""
+echo "您可以运行以下命令来测试 Docker："
+echo "docker run hello-world"
