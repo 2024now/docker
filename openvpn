@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# 创建并运行Docker容器
+docker run -it -d \
+  --sysctl net.ipv6.conf.all.disable_ipv6=1 \
+  --sysctl net.ipv6.conf.default.disable_ipv6=1 \
+  --sysctl net.ipv6.conf.lo.disable_ipv6=1 \
+  --name abcd \
+  --cap-add=NET_ADMIN \
+  --device /dev/net/tun:/dev/net/tun \
+  --dns 8.8.8.8 \
+  ubuntu:22.04
+
+# 在Docker容器内执行命令
+docker exec abcd bash -c '
+    apt-get update && \
+    apt-get install -y openvpn ca-certificates && \
+    mkdir -p /etc/openvpn
+'
+
+# 复制VPN配置文件到容器内
+docker cp /root/us9959.nordvpn.com.udp.ovpn abcd:/etc/openvpn/
+
+# 进入容器并显示/etc/openvpn目录内容
+docker exec abcd bash -c 'cd /etc/openvpn && ls -la'
