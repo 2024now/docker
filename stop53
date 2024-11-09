@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# 停止 systemd-resolved 服务
+echo "Stopping systemd-resolved service..."
+sudo systemctl stop systemd-resolved
+
+# 禁用 systemd-resolved 开机自启动
+echo "Disabling systemd-resolved service..."
+sudo systemctl disable systemd-resolved
+
+# 删除现有的 /etc/resolv.conf 文件
+echo "Removing current /etc/resolv.conf..."
+sudo rm -f /etc/resolv.conf
+
+# 创建新的 /etc/resolv.conf 并设置公共 DNS 服务器（Google DNS 和 Cloudflare DNS）
+echo "Configuring DNS settings..."
+echo -e "nameserver 8.8.8.8\nnameserver 1.1.1.1" | sudo tee /etc/resolv.conf > /dev/null
+
+# 确认更改
+echo "DNS settings have been updated. Current /etc/resolv.conf content:"
+cat /etc/resolv.conf
+
+echo "systemd-resolved has been stopped and DNS settings updated. You should still have network access."
