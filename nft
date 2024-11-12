@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# 清空现有规则
+nft flush ruleset
+
+# 创建表
+nft add table inet filter
+
+# 创建输入链
+nft add chain inet filter input { type filter hook input priority 0 \; policy drop \; }
+
+# 允许已建立和相关的连接
+nft add rule inet filter input ct state established,related accept
+
+# 允许本地回环接口
+nft add rule inet filter input iif lo accept
+
+# 允许ICMP
+nft add rule inet filter input ip protocol icmp accept
+
+# 保存脚本为 setup_nftables.sh 并执行：
+# sudo bash setup_nftables.sh
